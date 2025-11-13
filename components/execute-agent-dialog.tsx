@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useAuth } from '@clerk/nextjs'
 import { Play, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -14,23 +15,19 @@ import {
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { agentsApi, executionsApi, Agent } from '@/lib/api'
+import { createAgentsApi, createExecutionsApi, Agent } from '@/lib/api'
 
 export function ExecuteAgentDialog({ onSuccess }: { onSuccess?: () => void }) {
+  const { getToken } = useAuth()
   const [open, setOpen] = useState(false)
   const [agents, setAgents] = useState<Agent[]>([])
   const [selectedAgent, setSelectedAgent] = useState('')
   const [inputData, setInputData] = useState('')
   const [loading, setLoading] = useState(false)
 
-  useEffect(() => {
-    if (open) {
-      loadAgents()
-    }
-  }, [open])
-
   const loadAgents = async () => {
     try {
+      const agentsApi = createAgentsApi(getToken)
       const response = await agentsApi.getAll()
       setAgents(response.data)
       if (response.data.length > 0) {
@@ -41,11 +38,18 @@ export function ExecuteAgentDialog({ onSuccess }: { onSuccess?: () => void }) {
     }
   }
 
+  useEffect(() => {
+    if (open) {
+      loadAgents()
+    }
+  }, [open])
+
   const handleSubmit = async () => {
     if (!selectedAgent || !inputData.trim()) return
 
     setLoading(true)
     try {
+      const executionsApi = createExecutionsApi(getToken)
       await executionsApi.execute(selectedAgent, inputData)
       setOpen(false)
       setInputData('')

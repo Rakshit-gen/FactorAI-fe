@@ -1,12 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useAuth } from '@clerk/nextjs'
 import { History, RefreshCw, CheckCircle2, AlertCircle, Clock, Loader2, Trash2, ArrowRight } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { FormattedOutput } from '@/components/formatted-output'
-import { executionsApi, Execution } from '@/lib/api'
+import { createExecutionsApi, Execution } from '@/lib/api'
 
 const STATUS_CONFIG = {
   pending: { icon: Clock, color: 'text-yellow-500', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20', label: 'Pending' },
@@ -17,27 +18,25 @@ const STATUS_CONFIG = {
 
 const formatPreviewText = (text: string) => {
   if (!text) return text
+  
   let formatted = text
   formatted = formatted.replace(/\*\*(.+?)\*\*/g, '$1')
   formatted = formatted.replace(/\*(.+?)\*/g, '$1')
-  formatted = formatted.replace(/`(.+?)`/g, '$1') 
+  formatted = formatted.replace(/`(.+?)`/g, '$1')
   formatted = formatted.replace(/^#{1,6}\s+/gm, '')
+  
   return formatted
 }
 
 export function ExecutionsList({ onDelete }: { onDelete?: () => void }) {
+  const { getToken } = useAuth()
   const [executions, setExecutions] = useState<Execution[]>([])
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState<string | null>(null)
 
-  useEffect(() => {
-    loadExecutions()
-    const interval = setInterval(loadExecutions, 3000)
-    return () => clearInterval(interval)
-  }, [])
-
   const loadExecutions = async () => {
     try {
+      const executionsApi = createExecutionsApi(getToken)
       const response = await executionsApi.getAll()
       setExecutions(response.data)
     } catch (error) {
@@ -47,11 +46,18 @@ export function ExecutionsList({ onDelete }: { onDelete?: () => void }) {
     }
   }
 
+  useEffect(() => {
+    loadExecutions()
+    const interval = setInterval(loadExecutions, 3000)
+    return () => clearInterval(interval)
+  }, [])
+
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this execution?')) return
     
     setDeleting(id)
     try {
+      const executionsApi = createExecutionsApi(getToken)
       await executionsApi.delete(id)
       await loadExecutions()
       onDelete?.()
@@ -157,11 +163,9 @@ export function ExecutionsList({ onDelete }: { onDelete?: () => void }) {
                     />
                   </div>
                   <div className={`p-3 rounded-lg ${config.bg} border ${config.border}`}>
-                    <div className={`p-3 rounded-lg ${config.bg} border ${config.border}`}>
-                      <p className="text-sm line-clamp-4">
-                        {formatPreviewText(execution.output)}
-                      </p>
-                    </div>
+                    <p className="text-sm line-clamp-4">
+                      {formatPreviewText(execution.output)}
+                    </p>
                   </div>
                 </div>
               )}

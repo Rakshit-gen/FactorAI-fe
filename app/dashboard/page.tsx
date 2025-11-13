@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useAuth } from '@clerk/nextjs'
 import { Bot, Sparkles, History, Play, TrendingUp, Zap } from 'lucide-react'
 import { UserButton } from '@clerk/nextjs'
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -13,18 +14,19 @@ import { ExecuteAgentDialog } from '@/components/execute-agent-dialog'
 import { AgentsList } from '@/components/agents-list'
 import { TasksList } from '@/components/tasks-list'
 import { ExecutionsList } from '@/components/executions-list'
-import { agentsApi, tasksApi, executionsApi } from '@/lib/api'
+import { createAgentsApi, createTasksApi, createExecutionsApi } from '@/lib/api'
 
 export default function Home() {
+  const { getToken } = useAuth()
   const [activeTab, setActiveTab] = useState('agents')
   const [stats, setStats] = useState({ agents: 0, tasks: 0, executions: 0 })
   
-  useEffect(() => {
-    loadStats()
-  }, [])
-
   const loadStats = async () => {
     try {
+      const agentsApi = createAgentsApi(getToken)
+      const tasksApi = createTasksApi(getToken)
+      const executionsApi = createExecutionsApi(getToken)
+      
       const [agentsRes, tasksRes, executionsRes] = await Promise.all([
         agentsApi.getAll(),
         tasksApi.getAll(),
@@ -39,6 +41,10 @@ export default function Home() {
       console.error('Error loading stats:', error)
     }
   }
+
+  useEffect(() => {
+    loadStats()
+  }, [])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">

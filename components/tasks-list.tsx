@@ -1,12 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useAuth } from '@clerk/nextjs'
 import { Sparkles, RefreshCw, CheckCircle2, AlertCircle, Clock, Loader2, Trash2 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { FormattedOutput } from '@/components/formatted-output'
-import { tasksApi, Task } from '@/lib/api'
+import { createTasksApi, Task } from '@/lib/api'
 
 const STATUS_CONFIG = {
   pending: { icon: Clock, color: 'text-yellow-500', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20', label: 'Pending' },
@@ -14,30 +15,28 @@ const STATUS_CONFIG = {
   completed: { icon: CheckCircle2, color: 'text-green-500', bg: 'bg-green-500/10', border: 'border-green-500/20', label: 'Completed' },
   failed: { icon: AlertCircle, color: 'text-red-500', bg: 'bg-red-500/10', border: 'border-red-500/20', label: 'Failed' },
 }
+
 const formatPreviewText = (text: string) => {
   if (!text) return text
+  
   let formatted = text
   formatted = formatted.replace(/\*\*(.+?)\*\*/g, '$1')
   formatted = formatted.replace(/\*(.+?)\*/g, '$1')
-  formatted = formatted.replace(/`(.+?)`/g, '$1') 
+  formatted = formatted.replace(/`(.+?)`/g, '$1')
   formatted = formatted.replace(/^#{1,6}\s+/gm, '')
   
   return formatted
 }
 
 export function TasksList({ onDelete }: { onDelete?: () => void }) {
+  const { getToken } = useAuth()
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState<string | null>(null)
 
-  useEffect(() => {
-    loadTasks()
-    const interval = setInterval(loadTasks, 3000)
-    return () => clearInterval(interval)
-  }, [])
-
   const loadTasks = async () => {
     try {
+      const tasksApi = createTasksApi(getToken)
       const response = await tasksApi.getAll()
       setTasks(response.data)
     } catch (error) {
@@ -47,11 +46,18 @@ export function TasksList({ onDelete }: { onDelete?: () => void }) {
     }
   }
 
+  useEffect(() => {
+    loadTasks()
+    const interval = setInterval(loadTasks, 3000)
+    return () => clearInterval(interval)
+  }, [])
+
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this task?')) return
     
     setDeleting(id)
     try {
+      const tasksApi = createTasksApi(getToken)
       await tasksApi.delete(id)
       await loadTasks()
       onDelete?.()

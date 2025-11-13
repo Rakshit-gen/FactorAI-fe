@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useAuth } from '@clerk/nextjs'
 import { Sparkles, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -14,9 +15,10 @@ import {
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { tasksApi } from '@/lib/api'
+import { createTasksApi } from '@/lib/api'
 
 export function CreateTaskDialog({ onSuccess }: { onSuccess?: () => void }) {
+  const { getToken } = useAuth()
   const [open, setOpen] = useState(false)
   const [description, setDescription] = useState('')
   const [loading, setLoading] = useState(false)
@@ -27,6 +29,7 @@ export function CreateTaskDialog({ onSuccess }: { onSuccess?: () => void }) {
 
     setLoading(true)
     try {
+      const tasksApi = createTasksApi(getToken)
       const response = await tasksApi.create(description)
       setResult(response.data)
       setTimeout(() => {

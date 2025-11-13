@@ -14,10 +14,6 @@ export function AgentsList({ onDelete }: { onDelete?: () => void }) {
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState<string | null>(null)
 
-  useEffect(() => {
-    loadAgents()
-  }, [])
-
   const loadAgents = async () => {
     setLoading(true)
     try {
@@ -30,6 +26,10 @@ export function AgentsList({ onDelete }: { onDelete?: () => void }) {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    loadAgents()
+  }, [])
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this agent?')) return

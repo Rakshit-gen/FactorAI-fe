@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useAuth } from '@clerk/nextjs'
 import { Bot, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -15,7 +16,7 @@ import {
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { agentsApi } from '@/lib/api'
+import { createAgentsApi } from '@/lib/api'
 
 const AGENT_TYPES = [
   { value: 'researcher', label: 'Researcher' },
@@ -29,6 +30,7 @@ const AGENT_TYPES = [
 ]
 
 export function CreateAgentDialog({ onSuccess }: { onSuccess?: () => void }) {
+  const { getToken } = useAuth()
   const [open, setOpen] = useState(false)
   const [name, setName] = useState('')
   const [agentType, setAgentType] = useState('researcher')
@@ -41,17 +43,23 @@ export function CreateAgentDialog({ onSuccess }: { onSuccess?: () => void }) {
 
     setLoading(true)
     try {
-      await agentsApi.create({
-        name,
-        agent_type: agentType,
-        description: description || `Custom ${agentType} agent`,
-        system_prompt: systemPrompt,
-        capabilities: [],
-        model: 'llama-3.3-70b-versatile',
-        temperature: 0.7,
-        max_tokens: 2000,
-        agent_metadata: {}
-      })
+    // TEST - Check if token exists
+    const token = await getToken();
+    console.log('Token exists:', !!token);
+    console.log('Token preview:', token ? token.substring(0, 20) + '...' : 'NO TOKEN');
+    
+    const agentsApi = createAgentsApi(getToken)
+    await agentsApi.create({
+      name,
+      agent_type: agentType,
+      description: description || `Custom ${agentType} agent`,
+      system_prompt: systemPrompt,
+      capabilities: [],
+      model: 'llama-3.3-70b-versatile',
+      temperature: 0.7,
+      max_tokens: 2000,
+      agent_metadata: {}
+    })
       setOpen(false)
       setName('')
       setDescription('')
