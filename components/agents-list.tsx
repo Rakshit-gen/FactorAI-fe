@@ -1,13 +1,15 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useAuth } from '@clerk/nextjs'
 import { Bot, Trash2, RefreshCw, Zap, Brain } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { agentsApi, Agent } from '@/lib/api'
+import { createAgentsApi, Agent } from '@/lib/api'
 
 export function AgentsList({ onDelete }: { onDelete?: () => void }) {
+  const { getToken } = useAuth()
   const [agents, setAgents] = useState<Agent[]>([])
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState<string | null>(null)
@@ -19,6 +21,7 @@ export function AgentsList({ onDelete }: { onDelete?: () => void }) {
   const loadAgents = async () => {
     setLoading(true)
     try {
+      const agentsApi = createAgentsApi(getToken)
       const response = await agentsApi.getAll()
       setAgents(response.data)
     } catch (error) {
@@ -33,6 +36,7 @@ export function AgentsList({ onDelete }: { onDelete?: () => void }) {
     
     setDeleting(id)
     try {
+      const agentsApi = createAgentsApi(getToken)
       await agentsApi.delete(id)
       await loadAgents()
       onDelete?.()
